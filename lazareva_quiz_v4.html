@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Карта точек торможения — Анна Лазарева</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500&family=Jost:wght@300;400;500&family=Caveat:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ─── RESET ─────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{-webkit-font-smoothing:antialiased}
+button,a{border:none;background:none;cursor:pointer;font-family:inherit;text-decoration:none}
+
+/* ─── TOKENS ─────────────────────────────────── */
+:root{
+  --bg:        #E8E1D6;
+  --card:      #F5F1EA;
+  --card-opt:  #FDFBF7;
+  --ink:       #1E1810;
+  --ink-2:     #332A22;
+  --ink-3:     #4A3E36;
+  --muted:     #5A4E46;
+  --line:      rgba(80,58,42,0.20);
+  --line-2:    rgba(80,58,42,0.14);
+  --rule:      rgba(80,58,42,0.065);
+  --brown:     #6B4530;
+  --brown-h:   #8C5E44;
+  --sel-bg:    rgba(107,69,48,0.08);
+  --sel-brd:   #6B4530;
+  --r-card:    10px;
+  --r-opt:     8px;
+}
+
+/* ─── BASE ────────────────────────────────────── */
+body{
+  font-family:'Jost',sans-serif;
+  background:var(--bg);
+  color:var(--ink);
+  min-height:100vh;
+  min-height:100dvh;
+  overflow-x:hidden;
+}
+/* Subtle paper grain */
+body::after{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
+  opacity:0.028;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ─── LAYOUT ──────────────────────────────────── */
+.app{
+  position:relative;
+  min-height:100vh;min-height:100dvh;
+  display:flex;flex-direction:column;align-items:center;
+  padding:0 16px 72px;
+}
+.wrap{width:100%;max-width:600px;padding-top:44px}
+
+/* ─── SCREENS ─────────────────────────────────── */
+.scr{display:none;animation:scIn .48s cubic-bezier(.4,0,.2,1) forwards}
+.scr.on{display:block}
+@keyframes scIn{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+
+/* ─── BOTANICAL DECORATIONS ──────────────────── */
+.deco-wrap{
+  position:relative;
+  pointer-events:none;
+  user-select:none;
+}
+.deco-left,.deco-right{
+  position:absolute;
+  top:120px;
+  opacity:0.22;
+}
+.deco-left{left:-44px}
+.deco-right{right:-44px;transform:scaleX(-1)}
+@media(max-width:700px){
+  .deco-left{left:-28px;opacity:0.14}
+  .deco-right{right:-28px;opacity:0.14}
+}
+@media(max-width:560px){.deco-left,.deco-right{display:none}}
+
+/* ─── INTRO ───────────────────────────────────── */
+.intro-head{
+  text-align:center;
+  margin-bottom:28px;
+  padding:0 8px;
+}
+.intro-eyebrow{
+  font-family:'Caveat',cursive;
+  font-size:20px;color:var(--brown);
+  display:block;margin-bottom:10px;
+  opacity:1;
+}
+.intro-title{
+  font-family:'Cormorant Garamond',serif;
+  font-size:clamp(30px,7vw,46px);
+  font-weight:400;line-height:1.15;
+  color:var(--ink);margin-bottom:4px;
+  letter-spacing:-.2px;
+}
+.intro-title em{font-style:italic;color:var(--brown)}
+
+/* Sketch heart */
+.deco-heart{
+  display:block;margin:10px auto 0;
+  opacity:0.3;
+}
+
+/* Wavy underline */
+.wavy-line{
+  display:block;width:180px;
+  height:8px;margin:8px auto 0;
+  overflow:visible;
+}
+
+.intro-card{
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:var(--r-card);
+  box-shadow:0 6px 32px rgba(40,30,22,0.09),0 1px 4px rgba(40,30,22,0.05);
+  padding:44px 44px 40px;
+  position:relative;overflow:hidden;
+}
+@media(max-width:560px){.intro-card{padding:32px 22px 32px}}
+
+/* ruled lines inside card */
+.intro-card,.q-card{
+  background-image:
+    repeating-linear-gradient(transparent 0,transparent 27px,var(--rule) 27px,var(--rule) 28px);
+  background-color:var(--card);
+  background-position:0 44px;
+}
+
+/* top accent */
+.intro-card::after,.q-card::after{
+  content:'';
+  position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,var(--brown) 0%,var(--brown-h) 50%,var(--brown) 100%);
+  opacity:0.5;pointer-events:none;
+}
+
+/* margin line */
+.intro-card::before,.q-card::before{
+  content:'';
+  position:absolute;top:0;left:48px;
+  width:1px;height:100%;
+  background:rgba(160,80,60,0.09);
+  pointer-events:none;
+}
+
+.intro-desc{
+  font-size:16px;font-weight:400;
+  color:var(--ink-2);line-height:1.7;
+  margin-bottom:28px;
+}
+
+.intro-note{
+  font-family:'Caveat',cursive;
+  font-size:17px;color:var(--ink-3);
+  margin-bottom:30px;display:block;
+  line-height:1.6;
+}
+
+.tags{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:32px}
+.tag{
+  font-size:12px;color:var(--brown);
+  background:rgba(107,69,48,.08);
+  border:1px solid rgba(107,69,48,.18);
+  padding:6px 14px;border-radius:20px;
+  letter-spacing:.3px;
+}
+
+.meta-row{
+  display:flex;flex-wrap:wrap;gap:18px;
+  margin-bottom:36px;
+}
+.meta-i{
+  font-size:13px;font-weight:400;color:var(--ink-3);
+  display:flex;align-items:center;gap:7px;
+}
+.meta-dot{
+  width:4px;height:4px;border-radius:50%;
+  background:var(--brown);opacity:.4;
+}
+
+.btn-start{
+  display:inline-flex;align-items:center;gap:14px;
+  padding:17px 40px;
+  background:var(--brown);color:#fff;
+  border-radius:3px;
+  font-family:'Jost',sans-serif;
+  font-size:12px;font-weight:500;
+  letter-spacing:2.5px;text-transform:uppercase;
+  transition:all .28s ease;
+}
+.btn-start:hover{background:var(--brown-h);transform:translateY(-2px);box-shadow:0 8px 28px rgba(107,69,48,.28)}
+.btn-start:active{transform:translateY(0)}
+
+/* ─── PROGRESS ────────────────────────────────── */
+.prog-area{margin-bottom:20px}
+.prog-top{
+  display:flex;justify-content:space-between;
+  align-items:baseline;margin-bottom:8px;
+}
+.prog-label{
+  font-family:'Caveat',cursive;
+  font-size:18px;color:var(--ink-2);
+  font-weight:600;
+}
+.prog-pct{
+  font-family:'Caveat',cursive;
+  font-size:17px;color:var(--ink-3);
+}
+.prog-track{
+  height:2px;background:rgba(80,58,42,0.18);
+  border-radius:2px;overflow:hidden;
+}
+.prog-fill{
+  height:100%;
+  background:linear-gradient(90deg,var(--brown) 0%,var(--brown-h) 100%);
+  border-radius:2px;
+  transition:width .55s cubic-bezier(.4,0,.2,1);
+  width:0%;
+}
+
+/* ─── QUESTION ────────────────────────────────── */
+.q-wrap{position:relative;min-height:300px}
+.q-slide{width:100%}
+.q-slide.s-out{animation:qOut .2s ease forwards}
+.q-slide.s-in{animation:qIn .38s cubic-bezier(.4,0,.2,1) forwards}
+@keyframes qOut{to{opacity:0;transform:translateX(-18px)}}
+@keyframes qIn{from{opacity:0;transform:translateX(22px)}to{opacity:1;transform:translateX(0)}}
+
+.q-card{
+  border:1px solid var(--line);
+  border-radius:var(--r-card);
+  box-shadow:0 6px 36px rgba(40,30,22,0.09),0 1px 4px rgba(40,30,22,0.05);
+  padding:38px 40px 36px;
+}
+@media(max-width:560px){.q-card{padding:28px 20px 26px}}
+
+.q-num{
+  font-family:'Caveat',cursive;
+  font-size:17px;color:var(--brown);
+  opacity:.85;margin-bottom:14px;display:block;
+}
+
+.q-text{
+  font-family:'Cormorant Garamond',serif;
+  font-size:clamp(20px,4.2vw,26px);
+  font-weight:400;line-height:1.42;
+  color:var(--ink);margin-bottom:26px;
+}
+
+/* ─── OPTIONS ─────────────────────────────────── */
+.opts{display:flex;flex-direction:column;gap:9px}
+
+.opt{
+  display:flex;align-items:center;
+  background:var(--card-opt);
+  border:1.5px solid var(--line-2);
+  border-radius:var(--r-opt);
+  cursor:pointer;text-align:left;
+  width:100%;overflow:hidden;
+  transition:all .2s ease;
+  user-select:none;-webkit-user-select:none;
+  padding:0;
+}
+
+.opt-left{
+  display:flex;align-items:center;justify-content:center;
+  flex-direction:column;gap:5px;
+  width:50px;min-width:50px;
+  padding:14px 0;
+  flex-shrink:0;
+}
+
+/* Radio circle */
+.opt-radio{
+  width:20px;height:20px;
+  border-radius:50%;
+  border:1.5px solid rgba(80,58,42,0.42);
+  display:flex;align-items:center;justify-content:center;
+  transition:all .2s ease;
+  flex-shrink:0;
+}
+.opt-radio-inner{
+  width:9px;height:9px;
+  border-radius:50%;
+  background:var(--brown);
+  transform:scale(0);
+  transition:transform .22s cubic-bezier(.34,1.56,.64,1);
+}
+
+.opt-letter{
+  font-family:'Cormorant Garamond',serif;
+  font-size:14px;font-style:italic;
+  color:var(--ink-3);
+  line-height:1;
+  transition:color .2s;
+}
+
+/* Vertical divider */
+.opt-div{
+  width:1px;
+  align-self:stretch;
+  background:var(--line-2);
+  flex-shrink:0;
+  transition:background .2s;
+}
+
+.opt-text{
+  padding:15px 18px 15px 16px;
+  font-size:15px;font-weight:400;
+  line-height:1.55;color:var(--ink-2);
+  flex:1;
+  transition:color .2s;
+}
+
+/* Hover */
+.opt:hover{
+  border-color:rgba(107,69,48,.28);
+  background:#FDFCF9;
+}
+.opt:hover .opt-text{color:var(--ink)}
+.opt:hover .opt-radio{border-color:var(--brown)}
+.opt:hover .opt-letter{color:var(--brown)}
+
+/* Selected */
+.opt.sel{
+  border-color:var(--sel-brd);
+  background:var(--sel-bg);
+  pointer-events:none;
+}
+.opt.sel .opt-radio{
+  border-color:var(--brown);
+  background:rgba(107,69,48,.05);
+}
+.opt.sel .opt-radio-inner{transform:scale(1)}
+.opt.sel .opt-text{color:var(--ink);font-weight:400}
+.opt.sel .opt-letter{color:var(--brown)}
+.opt.sel .opt-div{background:rgba(107,69,48,.2)}
+
+/* Dimmed */
+.opt.dim{opacity:.36;pointer-events:none}
+
+/* ─── "ДАЛЕЕ" HINT ────────────────────────────── */
+.next-hint{
+  text-align:center;
+  padding:14px 0 0;
+  font-family:'Caveat',cursive;
+  font-size:17px;color:var(--muted);
+  opacity:.55;
+  display:flex;align-items:center;justify-content:center;gap:6px;
+}
+
+/* ─── LOADING DOTS ────────────────────────────── */
+.dots{
+  display:flex;gap:5px;justify-content:center;
+  padding:12px 0;opacity:0;transition:opacity .28s;
+}
+.dots.show{opacity:1}
+.dot{
+  width:4px;height:4px;border-radius:50%;
+  background:var(--muted);
+  animation:dp 1.1s ease-in-out infinite;
+}
+.dot:nth-child(2){animation-delay:.18s}
+.dot:nth-child(3){animation-delay:.36s}
+@keyframes dp{
+  0%,80%,100%{opacity:.2;transform:scale(.7)}
+  40%{opacity:1;transform:scale(1)}
+}
+
+/* ─── RESULT ──────────────────────────────────── */
+.res-card{
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:var(--r-card);
+  box-shadow:0 8px 48px rgba(40,30,22,0.12),0 2px 6px rgba(40,30,22,0.06);
+  overflow:hidden;
+}
+
+.res-hero{
+  background:linear-gradient(145deg,#4A2E1C 0%,#2C1A10 100%);
+  padding:52px 44px 44px;
+  position:relative;overflow:hidden;
+}
+@media(max-width:560px){.res-hero{padding:36px 24px 32px}}
+
+.res-hero::before{
+  content:'';
+  position:absolute;
+  width:320px;height:320px;border-radius:50%;
+  border:1px solid rgba(255,255,255,.05);
+  right:-90px;top:-90px;
+}
+
+.res-roman{
+  font-family:'Cormorant Garamond',serif;
+  font-size:130px;font-weight:300;
+  color:rgba(255,255,255,.05);
+  position:absolute;right:32px;bottom:-16px;
+  line-height:1;user-select:none;pointer-events:none;
+}
+
+.res-done{
+  font-family:'Caveat',cursive;
+  font-size:17px;color:rgba(255,255,255,.45);
+  display:block;margin-bottom:8px;
+  position:relative;z-index:1;
+}
+
+.res-over-label{
+  font-size:11px;font-weight:500;
+  letter-spacing:4px;text-transform:uppercase;
+  color:rgba(255,255,255,.3);
+  display:block;margin-bottom:12px;
+  position:relative;z-index:1;
+}
+
+.res-badge{
+  display:inline-block;
+  font-family:'Caveat',cursive;
+  font-size:15px;color:rgba(255,255,255,.5);
+  background:rgba(255,255,255,.07);
+  border:1px solid rgba(255,255,255,.1);
+  padding:4px 14px;border-radius:20px;
+  margin-bottom:14px;
+  position:relative;z-index:1;
+}
+
+.res-title{
+  font-family:'Cormorant Garamond',serif;
+  font-size:clamp(32px,7vw,50px);
+  font-weight:300;color:#fff;
+  line-height:1.1;
+  position:relative;z-index:1;
+}
+.res-title em{font-style:italic;opacity:.7}
+
+.res-body{
+  padding:44px 44px 48px;
+  background-image:repeating-linear-gradient(transparent 0,transparent 27px,var(--rule) 27px,var(--rule) 28px);
+  background-color:var(--card);
+  background-position:0 44px;
+}
+@media(max-width:560px){.res-body{padding:32px 22px 36px}}
+
+.res-main-label{
+  font-size:11px;font-weight:500;letter-spacing:4px;
+  text-transform:uppercase;color:var(--muted);
+  display:block;margin-bottom:6px;
+}
+.res-main-title{
+  font-family:'Cormorant Garamond',serif;
+  font-size:clamp(26px,5.5vw,34px);
+  font-weight:400;color:var(--ink);
+  margin-bottom:20px;line-height:1.2;
+}
+
+.res-quote{
+  font-family:'Cormorant Garamond',serif;
+  font-size:clamp(17px,3.5vw,21px);
+  font-style:italic;color:var(--brown);
+  border-left:2px solid var(--brown);
+  padding-left:18px;line-height:1.55;
+  opacity:.9;margin-bottom:22px;
+}
+
+.res-txt{
+  font-size:15px;font-weight:400;
+  line-height:1.8;color:var(--ink-2);
+  margin-bottom:24px;
+}
+.res-txt p+p{margin-top:12px}
+
+.nb-block{
+  border-radius:6px;padding:20px 22px;margin-bottom:12px;
+}
+.nb-block.why{
+  background:rgba(107,69,48,.05);
+  border:1px solid rgba(107,69,48,.14);
+}
+.nb-block.step{
+  background:rgba(107,69,48,.08);
+  border:1px solid rgba(107,69,48,.18);
+}
+.nb-lbl{
+  font-family:'Caveat',cursive;
+  font-size:16px;color:var(--brown);
+  display:flex;align-items:center;gap:6px;
+  margin-bottom:8px;
+}
+.nb-text{
+  font-size:14.5px;font-weight:400;
+  line-height:1.75;color:var(--ink-2);
+}
+
+/* Hand-drawn separator */
+.sketch-hr{
+  display:block;width:100%;height:14px;
+  margin:26px 0;overflow:visible;
+}
+
+.bridge-txt{
+  font-family:'Cormorant Garamond',serif;
+  font-size:clamp(15px,3.2vw,18px);
+  font-style:italic;
+  color:var(--ink-2);line-height:1.65;
+  text-align:center;margin-bottom:28px;
+}
+
+/* CTA section */
+.cta-block{text-align:center}
+.cta-h{
+  font-family:'Cormorant Garamond',serif;
+  font-size:clamp(22px,4.5vw,28px);
+  font-weight:400;color:var(--ink);
+  margin-bottom:6px;line-height:1.25;
+}
+.cta-sub{
+  font-family:'Caveat',cursive;
+  font-size:17px;color:var(--ink-3);
+  margin-bottom:24px;
+}
+
+.btn-row{
+  display:flex;flex-direction:column;
+  align-items:center;gap:10px;
+}
+.btn-primary{
+  display:inline-flex;align-items:center;gap:10px;
+  padding:16px 40px;
+  background:var(--brown);color:#fff;
+  border-radius:3px;
+  font-family:'Jost',sans-serif;
+  font-size:12px;font-weight:500;
+  letter-spacing:2.5px;text-transform:uppercase;
+  transition:all .28s ease;min-width:240px;
+  justify-content:center;
+}
+.btn-primary:hover{background:var(--brown-h);transform:translateY(-2px);box-shadow:0 8px 28px rgba(107,69,48,.26)}
+
+.btn-secondary{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:15px 36px;
+  background:transparent;
+  border:1.5px solid rgba(107,69,48,.32);
+  color:var(--brown);
+  border-radius:3px;
+  font-family:'Jost',sans-serif;
+  font-size:12px;font-weight:500;
+  letter-spacing:2px;text-transform:uppercase;
+  transition:all .22s ease;min-width:240px;
+  justify-content:center;
+}
+.btn-secondary:hover{border-color:var(--brown);background:rgba(107,69,48,.05)}
+
+/* Admin contact link — subtle, text-only style */
+.btn-admin{
+  display:inline-flex;align-items:center;gap:7px;
+  font-family:'Caveat',cursive;
+  font-size:17px;color:var(--muted);
+  text-decoration:none;
+  border-bottom:1px solid rgba(107,69,48,.25);
+  padding-bottom:1px;
+  transition:color .2s,border-color .2s;
+  margin-top:4px;
+}
+.btn-admin:hover{color:var(--brown);border-color:var(--brown)}
+
+.btn-retry{
+  font-family:'Caveat',cursive;
+  font-size:17px;color:var(--muted);
+  text-decoration:underline;text-underline-offset:3px;
+  transition:color .2s;padding:8px;margin-top:4px;
+}
+.btn-retry:hover{color:var(--brown)}
+
+/* ─── FOOTER ──────────────────────────────────── */
+.foot{
+  text-align:center;margin-top:48px;
+  font-size:11px;letter-spacing:2px;
+  text-transform:uppercase;color:rgba(80,58,42,.3);
+}
+
+/* ─── MOBILE ──────────────────────────────────── */
+@media(max-width:420px){
+  .opt-left{width:44px;min-width:44px}
+  .opt-text{font-size:14px;padding:14px 14px 14px 14px}
+}
+@media(hover:none){
+  .opt:hover{
+    border-color:var(--line-2);
+    background:var(--card-opt);
+  }
+  .opt:hover .opt-text{color:var(--ink-2)}
+  .opt:hover .opt-radio{border-color:rgba(80,58,42,0.3)}
+}
+</style>
+</head>
+<body>
+<div class="app">
+ <div class="wrap">
+
+  <!-- ══ INTRO ══ -->
+  <div id="s-intro" class="scr on">
+
+   <!-- Title above card -->
+   <div class="intro-head">
+    <span class="intro-eyebrow">Тест</span>
+    <h1 class="intro-title">Где ты сейчас застряла<br>на пути <em>к себе?</em></h1>
+
+    <!-- Wavy underline SVG -->
+    <svg class="wavy-line" viewBox="0 0 180 8" preserveAspectRatio="none">
+     <path d="M0,4 Q22,1 45,5 Q68,8 90,3 Q112,0 135,5 Q158,8 180,4"
+      stroke="#6B4530" stroke-width="1.1" fill="none" opacity="0.3" stroke-linecap="round"/>
+    </svg>
+
+    <!-- Heart sketch -->
+    <svg class="deco-heart" width="22" height="20" viewBox="0 0 22 20">
+     <path d="M11,17 Q4,12 2,7 Q1,2 6,2 Q8.5,2 11,5 Q13.5,2 16,2 Q21,2 20,7 Q18,12 11,17Z"
+      stroke="#6B4530" stroke-width="1" fill="none" opacity="0.35"
+      stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+   </div>
+
+   <!-- Botanical decorations -->
+   <div class="deco-wrap">
+    <!-- Left botanical -->
+    <svg class="deco-left" width="40" height="180" viewBox="0 0 40 180">
+     <path d="M20,180 Q18,140 20,100 Q22,60 18,20" stroke="#5C4A38" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+     <path d="M20,150 Q8,138 4,126" stroke="#5C4A38" stroke-width="1" fill="none" stroke-linecap="round"/>
+     <ellipse cx="3" cy="123" rx="5" ry="8" transform="rotate(-30 3 123)" fill="none" stroke="#5C4A38" stroke-width="0.9"/>
+     <path d="M19,130 Q30,118 34,106" stroke="#5C4A38" stroke-width="1" fill="none" stroke-linecap="round"/>
+     <ellipse cx="35" cy="103" rx="5" ry="8" transform="rotate(25 35 103)" fill="none" stroke="#5C4A38" stroke-width="0.9"/>
+     <path d="M20,108 Q7,95 3,82" stroke="#5C4A38" stroke-width="1" fill="none" stroke-linecap="round"/>
+     <ellipse cx="2" cy="79" rx="5" ry="8" transform="rotate(-25 2 79)" fill="none" stroke="#5C4A38" stroke-width="0.9"/>
+     <path d="M20,88 Q32,76 36,62" stroke="#5C4A38" stroke-width="1" fill="none" stroke-linecap="round"/>
+     <ellipse cx="37" cy="59" rx="5" ry="8" transform="rotate(30 37 59)" fill="none" stroke="#5C4A38" stroke-width="0.9"/>
+     <path d="M19,65 Q8,52 5,40" stroke="#5C4A38" stroke-width="1" fill="none" stroke-linecap="round"/>
+     <ellipse cx="4" cy="37" rx="4" ry="7" transform="rotate(-20 4 37)" fill="none" stroke="#5C4A38" stroke-width="0.9"/>
+    </svg>
+    <!-- Right botanical (mirrored via CSS scaleX) -->
+    <svg class="deco-right" width="40" height="180" viewBox="0 0 40 180">
+     <path d="M20,180 Q18,140 20,100 Q22,60 18,20" stroke="#5C4A38" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+     <path d="M20,150 Q8,138 4,126" stroke="#5C4A38" stroke-width="1" fill="none" stroke-linecap="round"/>
+     <ellipse cx="3" cy="123" rx="5" ry="8" transform="rotate(-30 3 123)" fill="none" stroke="#5C4A38" stroke-width="0.9"/>
+     <path d="M19,130 Q30,118 34,106" stroke="#5C4A38" stroke-width="1" fill="none" stroke-linecap="round"/>
+     <ellipse cx="35" cy="103" rx="5" ry="8" transform="rotate(25 35 103)" fill="none" stroke="#5C4A38" stroke-width="0.9"/>
+     <path d="M20,108 Q7,95 3,82" stroke="#5C4A38" stroke-width="1" fill="none" stroke-linecap="round"/>
+     <ellipse cx="2" cy="79" rx="5" ry="8" transform="rotate(-25 2 79)" fill="none" stroke="#5C4A38" stroke-width="0.9"/>
+     <path d="M20,88 Q32,76 36,62" stroke="#5C4A38" stroke-width="1" fill="none" stroke-linecap="round"/>
+     <ellipse cx="37" cy="59" rx="5" ry="8" transform="rotate(30 37 59)" fill="none" stroke="#5C4A38" stroke-width="0.9"/>
+    </svg>
+   </div>
+
+   <div class="intro-card">
+    <p class="intro-desc">Найди сценарий, который мешает тебе двигаться дальше.</p>
+    <span class="intro-note">Отвечай честно — выбирай то, что ближе всего к твоей реальности прямо сейчас, не то, что «должно быть».</span>
+
+    <div class="tags">
+     <span class="tag">Финансовый потолок</span>
+     <span class="tag">Чужой сценарий</span>
+     <span class="tag">Страх движения</span>
+     <span class="tag">Выгорание</span>
+     <span class="tag">Потеря смысла</span>
+    </div>
+
+    <div class="meta-row">
+     <span class="meta-i"><span class="meta-dot"></span>7 вопросов</span>
+     <span class="meta-i"><span class="meta-dot"></span>~2 минуты</span>
+     <span class="meta-i"><span class="meta-dot"></span>Бесплатно</span>
+    </div>
+
+    <button class="btn-start" id="btn-start">
+     Начать тест
+     <svg width="18" height="12" viewBox="0 0 18 12" fill="none">
+      <path d="M1,6 Q7,4 12,6 L16,6" stroke="rgba(255,255,255,.7)" stroke-width="1" stroke-linecap="round" fill="none"/>
+      <path d="M13,3 L16,6 L13,9" stroke="white" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+     </svg>
+    </button>
+   </div>
+
+  </div><!-- /s-intro -->
+
+  <!-- ══ QUIZ ══ -->
+  <div id="s-quiz" class="scr">
+
+   <!-- Title stays above -->
+   <div class="intro-head" style="margin-bottom:22px">
+    <span class="intro-eyebrow" style="font-size:17px;opacity:.6">Тест</span>
+    <h2 class="intro-title" style="font-size:clamp(22px,5vw,32px)">Где ты сейчас застряла<br>на пути <em>к себе?</em></h2>
+   </div>
+
+   <!-- Progress -->
+   <div class="prog-area">
+    <div class="prog-top">
+     <span class="prog-label" id="p-lbl">Вопрос 1 из 7</span>
+     <span class="prog-pct" id="p-pct">0%</span>
+    </div>
+    <div class="prog-track"><div class="prog-fill" id="p-fill"></div></div>
+   </div>
+
+   <!-- Question area -->
+   <div class="q-wrap" id="q-wrap"></div>
+
+   <!-- Далее hint -->
+   <div class="next-hint" id="next-hint" style="opacity:0;transition:opacity .3s">
+    <svg width="16" height="12" viewBox="0 0 16 12" fill="none">
+     <path d="M1,6 Q6,4 11,6 L14,6" stroke="#7A6E65" stroke-width="1" stroke-linecap="round" fill="none"/>
+     <path d="M11.5,3.5 L14,6 L11.5,8.5" stroke="#7A6E65" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    </svg>
+    Далее
+   </div>
+
+   <!-- Loading dots -->
+   <div class="dots" id="dots">
+    <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+   </div>
+
+  </div><!-- /s-quiz -->
+
+  <!-- ══ RESULT ══ -->
+  <div id="s-result" class="scr">
+   <div class="res-card" id="res-card"></div>
+  </div>
+
+  <p class="foot">© 2026 Анна Лазарева · психолог · коуч · игропрактик</p>
+
+ </div>
+</div>
+
+<script>
+/* ═══ DATA ══════════════════════════════════════ */
+const QS=[
+ {q:"Когда ты честно смотришь на свою жизнь прямо сейчас — что первым приходит в голову?",
+  opts:[
+   {l:"А",t:"«Я делаю всё правильно,\nно деньги стоят на одном месте»",tp:"A"},
+   {l:"Б",t:"«У меня есть жизнь. Но ощущение,\nчто она — не совсем моя»",tp:"B"},
+   {l:"В",t:"«Я знаю, что надо сделать.\nНо почему-то так и не делаю»",tp:"C"},
+   {l:"Г",t:"«Я просто устала. По-настоящему.\nОтдых уже не помогает»",tp:"D"},
+   {l:"Д",t:"«Всё вроде есть. Но ради чего —\nнепонятно»",tp:"E"}
+  ]},
+ {q:"Что чаще всего тебя останавливает, когда ты хочешь что-то изменить?",
+  opts:[
+   {l:"А",t:"Внутренний голос: «ещё рано», «ещё не заслужила»",tp:"A"},
+   {l:"Б",t:"Страх разочаровать тех, кто рядом, или нарушить привычный уклад",tp:"B"},
+   {l:"В",t:"Страх сделать шаг и обнаружить что-то важное про себя",tp:"C"},
+   {l:"Г",t:"Просто нет сил. На новое — особенно",tp:"D"},
+   {l:"Д",t:"Непонимание: ради чего вообще что-то менять",tp:"E"}
+  ]},
+ {q:"Как ты чувствуешь себя утром, когда только просыпаешься?",
+  opts:[
+   {l:"А",t:"Фоновая тревога — даже если вчера всё было нормально",tp:"A"},
+   {l:"Б",t:"Лёгкое ощущение, что впереди снова чужой день",tp:"B"},
+   {l:"В",t:"«Сегодня точно начну» — и к вечеру снова ничего",tp:"C"},
+   {l:"Г",t:"Пустота. Хочется ещё полежать, но уже не помогает",tp:"D"},
+   {l:"Д",t:"Ничего особенного. Просто непонятно — ради чего вставать",tp:"E"}
+  ]},
+ {q:"Если бы ты могла честно сказать подруге, в чём твоя настоящая проблема?",
+  opts:[
+   {l:"А",t:"«Год за годом я на одной сумме — и не понимаю почему»",tp:"A"},
+   {l:"Б",t:"«Я не знаю, чего хочу на самом деле»",tp:"B"},
+   {l:"В",t:"«Я всё понимаю про себя. Но ничего не меняется»",tp:"C"},
+   {l:"Г",t:"«Я выжата. Даже отпуск уже не восстанавливает»",tp:"D"},
+   {l:"Д",t:"«Достигла многого. И внутри — пусто»",tp:"E"}
+  ]},
+ {q:"Как давно у тебя ощущение, что ты стоишь на месте?",
+  opts:[
+   {l:"А",t:"Год-два. Работаю, стараюсь — цифры не растут",tp:"A"},
+   {l:"Б",t:"Давно. Кажется, я всегда жила немного не своей жизнью",tp:"B"},
+   {l:"В",t:"Помню момент, когда решила «скоро начну». Это было очень давно",tp:"C"},
+   {l:"Г",t:"С тех пор, как не помню себя живой и лёгкой",tp:"D"},
+   {l:"Д",t:"После того как что-то важное закончилось или изменилось",tp:"E"}
+  ]},
+ {q:"Что ты уже пробовала, чтобы изменить ситуацию?",
+  opts:[
+   {l:"А",t:"Курсы по финансам, бизнесу, «мышлению успешных»",tp:"A"},
+   {l:"Б",t:"Йога, психолог, путешествия — искала себя везде",tp:"B"},
+   {l:"В",t:"Читала, изучала, планировала. Снова читала",tp:"C"},
+   {l:"Г",t:"Отпуска, смена работы, «меньше нагрузки»",tp:"D"},
+   {l:"Д",t:"Ставила новые цели. Через три месяца — снова пусто",tp:"E"}
+  ]},
+ {q:"Что ты хочешь изменить в первую очередь?",
+  opts:[
+   {l:"А",t:"Убрать внутренний потолок и выйти на новый уровень дохода",tp:"A"},
+   {l:"Б",t:"Найти своё — и наконец жить своей жизнью",tp:"B"},
+   {l:"В",t:"Наконец сделать тот шаг, который откладываю",tp:"C"},
+   {l:"Г",t:"Восстановиться по-настоящему и снова почувствовать себя живой",tp:"D"},
+   {l:"Д",t:"Найти смысл и ощущение «ради чего»",tp:"E"}
+  ]}
+];
+
+const RS={
+ A:{roman:"I",badge:"Тип первый",
+  h:"Финансовый<br><em>потолок</em>",
+  q:"Тебе пора не работать ещё больше, а увидеть механизм, который ты повторяешь.",
+  d:`<p>Ты делаешь всё «правильно»: курсы, мышление, дисциплина, ещё один проект. И всё равно — стоишь. Полгода, год, два.</p><p>Дело не в навыках. И не в стратегии. Дело в твоём собственном механизме, который раз за разом тормозит тебя на одной и той же сумме.</p>`,
+  why:"Внутри есть страх, что новый доход что-то разрушит: близких отдалит, привычную идентичность обнулит. Пока этот страх не назван — психика будет защищать тебя от роста. Тихо. Через прокрастинацию, через «не та ниша», через «надо ещё один курс».",
+  step:"Сесть за стол игры «Код успеха» со своим финансовым запросом. За четыре часа становится видно — где именно у тебя «коротит»: чьим голосом звучит установка, когда появилась, что ты теряешь, если её отпустишь. Уходишь не с советом — с собственным инсайтом."
+ },
+ B:{roman:"II",badge:"Тип второй",
+  h:"Чужой<br><em>сценарий</em>",
+  q:"Ты не знаешь, где твой настоящий голос. Под слоями «правильного» он почти не слышен.",
+  d:`<p>Иногда это приходит после развода — «оказалось, я строила его жизнь, а не свою». Иногда — просто посередине вроде бы хорошей жизни, когда ты вдруг понимаешь: всё, что у меня есть — это то, чего ждали от меня другие.</p><p>Голос у тебя есть. Он просто давно не звучал.</p>`,
+  why:"В какой-то момент быть удобной оказалось безопаснее, чем быть собой. Это решение ты приняла рано — иногда в пять лет, иногда в пятнадцать. Тогда оно тебя спасло. Проблема в том, что стратегия осталась — а ты давно выросла.",
+  step:"Дать себе один вечер, чтобы услышать свой настоящий голос. На игре «Код успеха» это происходит за один разговор: ты начинаешь замечать — вот тут моё. А вот тут чужое, я несу это по привычке. С этого момента возвращение к себе становится ежедневным выбором."
+ },
+ C:{roman:"III",badge:"Тип третий",
+  h:"Страх<br><em>движения</em>",
+  q:"Понимать без действия — тоже способ остаться на месте.",
+  d:`<p>Ты много читаешь. Прошла несколько программ. Умно говоришь про свои страхи. У тебя в заметках — план жизни. А в реальности ничего не двинулось за последний год.</p><p>Это не лень. Не слабость воли. Конкретный психологический механизм: ты разрешаешь себе понимать, но не разрешаешь действовать.</p>`,
+  why:"Чаще всего — страх потери той хрупкой стабильности, которую ты сейчас держишь. Или страх, что получится — и тогда нужно будет жить новую жизнь. Пока шаг не сделан, можно оставаться в варианте «всё ещё впереди». Из этой позиции уходят годы.",
+  step:"Не «преодолевать страх», а назвать его — точно. Страх, который не назван, занимает всё пространство. Названный — один из факторов, с которым можно жить и действовать. За четыре часа на игре ты называешь его и формулируешь один шаг, который можно сделать даже со страхом."
+ },
+ D:{roman:"IV",badge:"Тип четвёртый",
+  h:"Выгорание",
+  q:"Не место истощает. Истощает способ, которым ты внутри живёшь.",
+  d:`<p>Сначала ты думала, что просто устала. Потом — что нужен отпуск. Потом — что нужно меньше работать. Потом перестала формулировать.</p><p>Выгорание — не про количество часов. Про то, что ты слишком долго делала то, что не пополняет тебя.</p>`,
+  why:"Можно взять отпуск, можно сменить работу — и через два месяца обнаружить себя в той же точке. Потому что внутренний механизм, который тебя истощает, ты везёшь с собой. Это может быть вынужденная роль. Или собственный требовательный голос, который не разрешает остановиться.",
+  step:"На игре мы смотрим не на «как тебе отдохнуть» — а на то, где у тебя утечка. Что ты делаешь каждый день, не замечая, что это съедает тебя. И что было бы тебе сейчас опорой. Это видно за один вечер."
+ },
+ E:{roman:"V",badge:"Тип пятый",
+  h:"Потеря<br><em>смысла</em>",
+  q:"Через эту точку проходит каждая женщина, у которой жизнь не остановилась в одной роли.",
+  d:`<p>Снаружи может казаться, что у тебя всё хорошо. Работа, дом, может быть отношения. Но внутри — пустота, которую ты не показываешь даже самой близкой подруге.</p><p>Утром ты не знаешь, ради чего вставать. Не «срочно», не «больно» — просто непонятно ради чего.</p>`,
+  why:"Когда внешняя структура смысла обрушилась — поиск новой большой цели только усугубляет пустоту. Ты ставишь цель из ума, а внутри её ничем не подпитываешь. Через три месяца цель забыта — а ощущение «не моё» на месте.",
+  step:"Заново разрешить себе хотеть. Игра — место, где можно начать снова слышать свои желания. Без оценки «надо/не надо», без вопросов «а это реалистично?» Просто — что ты на самом деле хочешь сейчас. Из этих маленьких разрешённых «хочу» и собирается новая внутренняя опора."
+ }
+};
+
+/* ═══ STATE ══════════════════════════════════ */
+let cur=0,ans=[],busy=false;
+const $=id=>document.getElementById(id);
+
+/* ═══ SCREENS ════════════════════════════════ */
+function showScr(id){
+ ['s-intro','s-quiz','s-result'].forEach(s=>{
+  const el=$(s);el.classList.remove('on');el.style.display='none';
+ });
+ const t=$(id);t.style.display='block';
+ requestAnimationFrame(()=>requestAnimationFrame(()=>t.classList.add('on')));
+ window.scrollTo({top:0,behavior:'smooth'});
+}
+
+/* ═══ RENDER QUESTION ════════════════════════ */
+function renderQ(anim){
+ const q=QS[cur];
+ const pct=Math.round((cur/QS.length)*100);
+ $('p-lbl').textContent=`Вопрос ${cur+1} из ${QS.length}`;
+ $('p-pct').textContent=pct+'%';
+ $('p-fill').style.width=pct+'%';
+ $('next-hint').style.opacity='0';
+
+ const optHtml=q.opts.map((o,i)=>`
+  <button class="opt" onclick="pick(${i},'${o.tp}',this)">
+   <div class="opt-left">
+    <div class="opt-radio"><div class="opt-radio-inner"></div></div>
+    <span class="opt-letter">${o.l}</span>
+   </div>
+   <div class="opt-div"></div>
+   <span class="opt-text">${o.t.replace(/\n/g,'<br>')}</span>
+  </button>`).join('');
+
+ const html=`<div class="q-slide${anim?' s-in':''}" id="q-slide">
+  <div class="q-card">
+   <span class="q-num">— вопрос ${cur+1}</span>
+   <p class="q-text">${q.q}</p>
+   <div class="opts">${optHtml}</div>
+  </div>
+ </div>`;
+
+ const wrap=$('q-wrap');
+ if(anim){
+  const old=wrap.querySelector('.q-slide');
+  if(old){old.classList.add('s-out');setTimeout(()=>{wrap.innerHTML=html},200);}
+  else wrap.innerHTML=html;
+ } else wrap.innerHTML=html;
+}
+
+/* ═══ PICK ANSWER ════════════════════════════ */
+function pick(idx,tp,btn){
+ if(busy)return; busy=true;
+ ans.push(tp);
+ document.querySelectorAll('.opt').forEach((o,i)=>{
+  i===idx?o.classList.add('sel'):o.classList.add('dim');
+ });
+ $('next-hint').style.opacity='1';
+ const dots=$('dots'); dots.classList.add('show');
+ setTimeout(()=>{
+  dots.classList.remove('show');
+  $('next-hint').style.opacity='0';
+  if(cur<QS.length-1){cur++;renderQ(true);busy=false;}
+  else{showResult();busy=false;}
+ },700);
+}
+
+/* ═══ RESULT ════════════════════════════════ */
+function calcResult(){
+ const cnt={},fi={};
+ ans.forEach((t,i)=>{cnt[t]=(cnt[t]||0)+1;if(fi[t]===undefined)fi[t]=i;});
+ return Object.keys(cnt).sort((a,b)=>cnt[b]!==cnt[a]?cnt[b]-cnt[a]:fi[a]-fi[b])[0];
+}
+
+function showResult(){
+ const k=calcResult(); const r=RS[k];
+ $('res-card').innerHTML=`
+  <div class="res-hero">
+   <span class="res-roman">${r.roman}</span>
+   <span class="res-done">✓ Тест завершён</span>
+   <span class="res-over-label">Ваш результат теста</span>
+   <span class="res-badge">${r.badge}</span>
+   <h2 class="res-title">${r.h}</h2>
+  </div>
+  <div class="res-body">
+   <span class="res-main-label">Ваш результат</span>
+   <div class="res-main-title">${r.h.replace('<br>','&nbsp;')}</div>
+   <p class="res-quote">${r.q}</p>
+   <div class="res-txt">${r.d}</div>
+   <div class="nb-block why">
+    <span class="nb-lbl">
+     <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <circle cx="7" cy="7" r="5.5" stroke="#6B4530" stroke-width="1"/>
+      <path d="M7,4.5 L7,7.2" stroke="#6B4530" stroke-width="1.1" stroke-linecap="round"/>
+      <circle cx="7" cy="9.4" r="0.55" fill="#6B4530"/>
+     </svg>
+     почему это происходит
+    </span>
+    <p class="nb-text">${r.why}</p>
+   </div>
+   <div class="nb-block step">
+    <span class="nb-lbl">
+     <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <path d="M2,7 Q5,5.5 8,7 L12.5,7" stroke="#6B4530" stroke-width="1.1" stroke-linecap="round" fill="none"/>
+      <path d="M10,4.5 L12.5,7 L10,9.5" stroke="#6B4530" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+     </svg>
+     твой следующий шаг
+    </span>
+    <p class="nb-text">${r.step}</p>
+   </div>
+   <svg class="sketch-hr" viewBox="0 0 500 14" preserveAspectRatio="none">
+    <path d="M0,7 Q62,3 125,8 Q187,12 250,6 Q312,2 375,8 Q437,12 500,7"
+     stroke="#6B4530" stroke-width="0.9" fill="none" opacity="0.2" stroke-linecap="round"/>
+   </svg>
+   <p class="bridge-txt">Если это откликнулось — можно записаться на игру «Код успеха»<br>или заглянуть в Telegram-канал Анны Лазаревой.</p>
+   <div class="cta-block">
+    <h3 class="cta-h">Сделать следующий шаг</h3>
+    <p class="cta-sub">↓ выбери, что ближе прямо сейчас</p>
+    <div class="btn-row">
+     <a href="https://forms.yandex.ru/u/6a08b19e02848f5c6e563ef6" target="_blank" rel="noopener" class="btn-primary">Записаться на игру →</a>
+     <a href="https://t.me/+Zd0wma0CwtQ0ZTcy" target="_blank" rel="noopener" class="btn-secondary">Перейти в Telegram-канал</a>
+     <a href="https://t.me/ALazareva_admin" target="_blank" rel="noopener" class="btn-admin">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+       <path d="M1,7 Q3,3 7,2 Q11,1 13,5 Q14,8 11,11 Q9,13 7,12 L5,13 L5.5,11 Q2,9 1,7Z" stroke="#5A4E46" stroke-width="1" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Задать вопрос администратору
+     </a>
+     <button class="btn-retry" onclick="retry()">Пройти тест ещё раз</button>
+    </div>
+   </div>
+  </div>`;
+ showScr('s-result');
+}
+
+/* ═══ RETRY ══════════════════════════════════ */
+function retry(){cur=0;ans=[];busy=false;showScr('s-intro');}
+
+/* ═══ INIT ═══════════════════════════════════ */
+document.addEventListener('DOMContentLoaded',()=>{
+ $('btn-start').addEventListener('click',()=>{renderQ(false);showScr('s-quiz');});
+});
+</script>
+</body>
+</html>
